@@ -32,8 +32,8 @@ var TYPES = [
 // ---------- 年齡三檔(kid-age-modes) ----------
 var MODES = {
   young:{ label:'幼幼(4-6)', types:4, minChain:2, target:600,  r:47, feed:20 },
-  kid:  { label:'兒童(7-11)', types:7, minChain:3, target:3000, r:38, feed:13 },
-  teen: { label:'青少年(12+)', types:9, minChain:4, target:6000, r:32, feed:10 }
+  kid:  { label:'兒童(7-11)', types:7, minChain:3, target:3000, r:38, feed:11 },
+  teen: { label:'青少年(12+)', types:9, minChain:4, target:6000, r:32, feed:8 }
 };
 var modeKey = 'kid';
 try{ modeKey = localStorage.getItem('f9-mode') || 'kid'; }catch(e){}
@@ -117,7 +117,7 @@ function rnd(a,b){ return a + Math.random()*(b-a); }
 function spawnTsum(){
   var ts = activeTypes(), t, x;
   // 07-22:群聚生成——45% 抄場上隨機一顆的型別、落在它附近,讓 5+ 長鏈自然可達(鏈長本無上限,是密度不夠)
-  var anchor = playing && tsums.length && Math.random() < 0.45 ? tsums[(Math.random()*tsums.length)|0] : null;   // 07-22:開場鋪場不群聚(會滾雪球整片同色),只在補球時群聚
+  var anchor = playing && tsums.length && Math.random() < (modeKey==='teen'?0.25:modeKey==='kid'?0.35:0.45) ? tsums[(Math.random()*tsums.length)|0] : null;   // 07-22:開場鋪場不群聚(會滾雪球整片同色),只在補球時群聚
   if (anchor && !anchor.t.wild){
     t = anchor.t;
     x = Math.max(M.r+6, Math.min(W-M.r-6, anchor.x + rnd(-70,70)));
@@ -239,7 +239,7 @@ function collect(list){
   var vn0 = list[0].t.name.split('・')[0];
   banner = { text: n>=5 ? ('結出好多'+vn0+'!分給鄰舍 '+people+' 份') : ('結出'+vn0+'的果子!分給 '+people+' 份'), t:1.4 };
   if (chainCount >= nextBlessAt && blessT<=0){
-    blessT = 8; nextBlessAt += (modeKey==='teen'?9:7);
+    blessT = 8; nextBlessAt += (modeKey==='teen'?13:10);
     banner = { text:'✨ 聖靈澆灌——結的果子加倍!', t:2.4 };
     blip(784,0.4,'triangle',0.12); blip(988,0.5,'triangle',0.1);
     if (!blessSpoken){ blessSpoken = true; speak('bless'); }
@@ -542,7 +542,7 @@ function menuTap(p){
 function startGame(){
   tsums = []; chain = []; flying = []; sparks = [];
   fed = 0; shownFed = 0; chainCount = 0; won = false; blessT = 0; blessSpoken = false;
-  nextBlessAt = modeKey==='young' ? 4 : 6;
+  nextBlessAt = modeKey==='young' ? 4 : 8;
   spawnQueue = 0; doneSent = false;
   hintT = 0; checkT = 0; hintGroup = null;
   var n = Math.min(CAP-6, Math.floor((W-20)/(2*M.r)) * 6);
@@ -657,7 +657,7 @@ function loop(ms){
       // 07-22 修:場滿 CAP 時 spawnQueue 永遠掉不到 0(生成被 tsums.length<CAP 擋)
       // →舊條件 spawnQueue===0 讓救援永不觸發=死局;場滿就直接放行救援
       if (!g0 && flying.length===0 && (spawnQueue===0 || tsums.length >= CAP)){ dbgRescues++; rescue(); g0 = findGroup(); }
-      if (hintT >= 4 && g0) hintGroup = g0;
+      if (hintT >= (modeKey==='teen'?10:modeKey==='kid'?6:4) && g0) hintGroup = g0;
     }
   }
   shownFed += (fed - shownFed) * Math.min(1, dt*6);
