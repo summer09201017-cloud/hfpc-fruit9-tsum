@@ -33,12 +33,13 @@ var TYPES = [
 var MODES = {
   young:{ label:'幼幼(4-6)', types:4, minChain:2, target:600,  r:47, feed:20 },
   kid:  { label:'兒童(7-11)', types:7, minChain:3, target:3000, r:38, feed:11 },
-  teen: { label:'青少年(12+)', types:9, minChain:4, target:6000, r:32, feed:8 }
+  teen: { label:'青少年(12+)', types:9, minChain:5, target:6000, r:32, feed:8 }
 };
 var modeKey = 'kid';
 try{ modeKey = localStorage.getItem('f9-mode') || 'kid'; }catch(e){}
 if(!MODES[modeKey]) modeKey = 'kid';
 var M = MODES[modeKey];
+var level = 1, curTarget = M.target;   // 07-22 關卡制:第N關目標=基礎×(1+0.5×(N-1)),續關存本機
 
 // ---------- 版面 ----------
 var CROWD_TOP = 64, CROWD_H = 150;           // 上方群眾草地
@@ -225,7 +226,7 @@ function collect(list){
   var n = list.length;
   var mult = (n>=8?3 : n>=5?2 : 1) * (blessT>0?2:1);
   var people = n * M.feed * mult;
-  fed = Math.min(M.target, fed + people);
+  fed = Math.min(curTarget, fed + people);
   chainCount++;
   hintT = 0; hintGroup = null;
   chordCollect(n);
@@ -244,7 +245,7 @@ function collect(list){
     blip(784,0.4,'triangle',0.12); blip(988,0.5,'triangle',0.1);
     if (!blessSpoken){ blessSpoken = true; speak('bless'); }
   }
-  if (fed >= M.target && !won){
+  if (fed >= curTarget && !won){
     won = true; scene = 'win'; speak('win');
     if (!doneSent){ doneSent = true;
       if (window.__ping) window.__ping('fruit9-tsum-done', Math.round((Date.now()-startTime)/1000)); }
@@ -399,7 +400,7 @@ function drawTsum(t, xx, yy, rr){
 }
 function drawCrowdPerson(x, y, s, i, t){
   // 坐在草地上的小人(有臉),吃飽比例越高越多人舉手歡呼
-  var happyN = Math.floor((fed/M.target)*CROWD_N);
+  var happyN = Math.floor((fed/curTarget)*CROWD_N);
   var happy = i < happyN;
   var bob = happy ? Math.sin(t*5 + i)*2 : 0;
   ctx.fillStyle = ['#c96b4a','#7a9c5a','#5a7a9c','#9c7a5a','#8a5a9c'][i%5];
@@ -432,16 +433,18 @@ function drawHUD(){
   ctx.fillStyle = '#1e5c33';
   ctx.fillRect(0,0,W,CROWD_TOP);
   ctx.fillStyle = '#fff'; ctx.font = 'bold 26px "Microsoft JhengHei",sans-serif'; ctx.textAlign='center';
-  ctx.fillText('已分享 ' + Math.round(shownFed) + ' / ' + M.target + ' 份果子', W/2, 40);
+  ctx.fillText('已分享 ' + Math.round(shownFed) + ' / ' + curTarget + ' 份果子', W/2, 40);
   // 返回大廳
   ctx.font = '20px sans-serif'; ctx.textAlign='left';
   ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillText('← 大廳', 12, 38);
   ctx.textAlign='right';
   ctx.fillText(muted?'🔇':'🔊', W-14, 38);
+  ctx.font = 'bold 16px "Microsoft JhengHei",sans-serif'; ctx.textAlign='left';
+  ctx.fillStyle = '#ffe9a8'; ctx.fillText('第'+level+'關', 12, 58);
   // 進度條
   ctx.fillStyle = 'rgba(0,0,0,.3)'; roundRect(80, 48, W-160, 10, 5); ctx.fill();
   ctx.fillStyle = blessT>0 ? '#ffd54a' : '#8fdc7a';
-  var w = Math.max(10,(W-160)*Math.min(1, shownFed/M.target));
+  var w = Math.max(10,(W-160)*Math.min(1, shownFed/curTarget));
   roundRect(80, 48, w, 10, 5); ctx.fill();
 }
 function hudTap(p){
@@ -540,6 +543,8 @@ function menuTap(p){
   }
 }
 function startGame(){
+  try{ level = Math.max(1, parseInt(localStorage.getItem('f9-lvl-'+modeKey))||1); }catch(e){ level = 1; }
+  curTarget = Math.round(M.target * (1 + (level-1)*0.5));
   tsums = []; chain = []; flying = []; sparks = [];
   fed = 0; shownFed = 0; chainCount = 0; won = false; blessT = 0; blessSpoken = false;
   nextBlessAt = modeKey==='young' ? 4 : 8;
@@ -579,9 +584,10 @@ function drawWin(t){
   ctx.fillText('果子不是自己擠出來的——', W/2, 590);
   ctx.fillText('是聖靈在我們裡面結出來的;分出去,榮耀歸神。', W/2, 624);
   winBtns = [];
-  var items = [['🔊 再聽經文','listen'],['再玩一次','again'],['← 回大廳','lobby']];
-  for (i=0;i<3;i++){
-    var y = 690 + i*84;
+  var nextT = Math.round(M.target * (1 + level*0.5));
+  var items = [['⭐ 下一關(目標 '+nextT+')','next'],['🔊 再聽經文','listen'],['再玩一次','again'],['← 回大廳','lobby']];
+  for (i=0;i<items.length;i++){
+    var y = 652 + i*76;
     ctx.fillStyle = 'rgba(255,255,255,.15)'; roundRect(W/2-160, y, 320, 66, 16); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.font = 'bold 27px "Microsoft JhengHei",sans-serif';
     ctx.fillText(items[i][0], W/2, y+43);
@@ -592,6 +598,7 @@ function winTap(p){
   for (var i=0;i<winBtns.length;i++){
     var b = winBtns[i];
     if (p.x>b.x && p.x<b.x+b.w && p.y>b.y && p.y<b.y+b.h){
+      if (b.act==='next'){ try{ localStorage.setItem('f9-lvl-'+modeKey, ''+(level+1)); }catch(e){} startGame(); return; }
       if (b.act==='listen') speak('win');
       else if (b.act==='again') scene = 'menu';
       else location.href = 'https://hfpc-bible-games.netlify.app/';
@@ -705,7 +712,7 @@ requestAnimationFrame(loop);
 // ---------- 測試鉤子(?test=1 才掛;Playwright 驗證用,不影響玩家) ----------
 if (location.search.indexOf('test=1') !== -1){
   window.__tsum = {
-    state: function(){ return { scene:scene, fed:fed, n:tsums.length, queue:spawnQueue, chains:chainCount, mode:modeKey, dragging:dragging, hint:!!hintGroup, checks:dbgChecks, rescues:dbgRescues, chainLen:chain.length }; },
+    state: function(){ return { scene:scene, fed:fed, n:tsums.length, queue:spawnQueue, chains:chainCount, mode:modeKey, dragging:dragging, hint:!!hintGroup, checks:dbgChecks, rescues:dbgRescues, chainLen:chain.length, level:level }; },
     row: function(n){
       // 排一排同款(驗證鏈長無上限):前 n 顆同型等距一列,其餘搬離
       var ty = tsums[0].t;
@@ -750,7 +757,7 @@ if (location.search.indexOf('test=1') !== -1){
     },
     findGroup: function(){ var g=findGroup(); return g?g.length:0; },
     rescue: function(){ return rescue(); },
-    win: function(){ fed = M.target - 1; return this.autoChain(); }
+    win: function(){ fed = curTarget - 1; return this.autoChain(); }
   };
 }
 })();
