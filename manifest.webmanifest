@@ -1,0 +1,13 @@
+{
+  "name": "聖靈九果・結果子分出去",
+  "short_name": "聖靈九果",
+  "description": "連起同款的餅和魚分給眾人——結果子分出去,直到五千人吃飽,還剩十二籃!(太14/約6,和合本)",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#1b3a26",
+  "theme_color": "#2e7d46",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
