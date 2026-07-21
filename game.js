@@ -236,7 +236,8 @@ function collect(list){
   }
   for (i=0;i<10+n*2;i++) sparks.push({ x:list[0].x, y:list[0].y, vx:rnd(-3,3), vy:rnd(-4,1), life:1 });
   spawnQueue += n + 1;                      // ★越分越多:清 n 掉 n+1
-  banner = { text: n>=5 ? ('好長的一串!分給鄰舍 '+people+' 份') : ('分給鄰舍 '+people+' 份'), t:1.4 };
+  var vn0 = list[0].t.name.split('・')[0];
+  banner = { text: n>=5 ? ('結出好多'+vn0+'!分給鄰舍 '+people+' 份') : ('結出'+vn0+'的果子!分給 '+people+' 份'), t:1.4 };
   if (chainCount >= nextBlessAt && blessT<=0){
     blessT = 8; nextBlessAt += (modeKey==='teen'?9:7);
     banner = { text:'✨ 聖靈澆灌——結的果子加倍!', t:2.4 };
@@ -385,7 +386,15 @@ function drawTsum(t, xx, yy, rr){
   if (ty.band){ ctx.strokeStyle = 'rgba(40,50,20,.45)'; ctx.lineWidth = Math.max(2, r*0.1);
     ctx.beginPath(); ctx.arc(x, y, r*0.72, 0.5, 2.2); ctx.stroke(); }
   ballHighlight(x, y, r*0.95);
-  drawFace(x, y+r*0.05, r, t.hi);
+  drawFace(x, y-r*0.12, r*0.9, t.hi);
+  // 德目名(中文兩字):孩子看果子就連到品格
+  var vn = ty.name.split('・')[0];
+  ctx.font = 'bold ' + Math.max(9, r*0.34) + 'px "Microsoft JhengHei",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = Math.max(2, r*0.1); ctx.strokeStyle = 'rgba(40,25,10,.85)'; ctx.lineJoin = 'round';
+  ctx.strokeText(vn, x, y+r*0.62);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(vn, x, y+r*0.62);
   ctx.restore();
 }
 function drawCrowdPerson(x, y, s, i, t){
